@@ -9,7 +9,9 @@
     </div>
       <button @click="scanQrCode">{{!isShowCamera?'Scan qr code':'Exit QR reader'}}</button>
 
-    <qrcode-stream v-if="isShowCamera" @decode="onDecode" @init="onInit" />
+    <qrcode-stream v-if="isShowCamera" :track="dots" @decode="onDecode" @init="onInit" >
+      <span v-if="loading">Cargando</span>
+    </qrcode-stream>
   </div>
 </template>
 
@@ -20,10 +22,33 @@ export default {
       result: "",
       error: "",
       isShowCamera: false,
+      loading: false,
     };
   },
 
   methods: {
+
+    dots (location, ctx) {
+      const color = '#007bff'
+      const {
+        topLeftFinderPattern,
+        topRightFinderPattern,
+        bottomLeftFinderPattern
+      } = location
+
+      const pointArray = [
+        topLeftFinderPattern,
+        topRightFinderPattern,
+        bottomLeftFinderPattern
+      ]
+
+      ctx.fillStyle = color
+
+      pointArray.forEach(({ x, y }) => {
+        ctx.fillRect(x - 5, y - 5, 10, 10)
+      })
+    },
+
     onDecode(result) {
       this.result = result;
       this.isShowCamera = false;
@@ -33,6 +58,7 @@ export default {
     },
 
     async onInit(promise) {
+      this.loading = true
       try {
         await promise;
       } catch (error) {
@@ -49,6 +75,8 @@ export default {
         } else if (error.name === "StreamApiNotSupportedError") {
           this.error = "ERROR: Stream API is not supported in this browser";
         }
+      } finally {
+        this.loading = false
       }
     },
   },
